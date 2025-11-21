@@ -1,0 +1,8 @@
+.venv
+.env
+_pycache_
+\_pycache_
+*.pyc
+\signature-images
+*.jpg
+*.jpeg
