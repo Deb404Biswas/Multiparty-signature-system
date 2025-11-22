@@ -17,5 +17,15 @@ class DatabaseConnect:
     @staticmethod
     async def party_collection_insert_many(doc):
         await party_collection.insert_many(doc)
+    
+    @staticmethod
     async def sign_collection_insert_one(doc):
         await sign_collection.insert_one(doc)
+    
+    @staticmethod
+    async def sign_collection_update_one(file_path,image_filename):
+        query={'filepath':file_path}
+        update_operation={'$set':
+            {'image_name':image_filename}
+            }
+        await sign_collection.update_one(query,update_operation)
