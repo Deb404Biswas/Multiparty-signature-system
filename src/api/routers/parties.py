@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException,UploadFile
 from src.api.dependencies.database import DatabaseConnect
-from src.api.routers.admin import isUpdateLocked
+from src.api.routers.admin import isUpdateLocked, submit_conformation_list
 from starlette import status
 from pathlib import Path
 import shutil
@@ -51,3 +51,10 @@ async def update_image_signature(sign_image:UploadFile):
         msg=f'Signature extracted from {sign_image.filename} has been updated'
     sign_image.file.close()
     return msg
+
+@router.put('/submit-confirmation',status_code=status.HTTP_200_OK)
+async def parties_update_confirmation():
+    global submit_conformation_list
+    submit_conformation_list[party_role]=True
+    print(submit_conformation_list)
+    return f"{party_role} has submitted signature."
