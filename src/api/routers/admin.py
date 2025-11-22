@@ -32,6 +32,12 @@ async def initiate_party_inclusion(parties: Parties):
 
 @router.put('/lock_update', status_code=status.HTTP_200_OK)
 async def lock_update():
+    parties_notSubmitted=[]
+    for party in submit_conformation_list:
+        if submit_conformation_list[party]==False:
+            parties_notSubmitted.append(party)
+    if parties_notSubmitted is not None:
+        return f'{parties_notSubmitted} are left to confirm and submit their signatures.'
     global isUpdateLocked
     isUpdateLocked=True
     return "No further update allowed by parties. PDF generation in process."
