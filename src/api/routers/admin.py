@@ -3,6 +3,8 @@ from src.api.dependencies.database import DatabaseConnect
 from typing import List
 from pydantic import BaseModel
 from starlette import status
+
+
 router=APIRouter(
     prefix='/admin/v1',
     tags=['Admin']
@@ -17,6 +19,7 @@ class Parties(BaseModel):
     
 isUpdateLocked=False
 submit_conformation_list={}
+    
 
 @router.post("/create-new-parties",status_code=status.HTTP_201_CREATED)
 async def initiate_party_inclusion(parties: Parties):
@@ -30,7 +33,7 @@ async def initiate_party_inclusion(parties: Parties):
     await DatabaseConnect.party_collection_insert_many(docs)
     return f"{parties.no_of_parties} parties added to the record"
 
-@router.put('/lock_update', status_code=status.HTTP_200_OK)
+@router.put('/lock-update', status_code=status.HTTP_200_OK)
 async def lock_update():
     parties_notSubmitted=[]
     for party in submit_conformation_list:

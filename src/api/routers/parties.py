@@ -4,7 +4,13 @@ from src.api.routers.admin import isUpdateLocked, submit_conformation_list
 from starlette import status
 from pathlib import Path
 import shutil
+from fastapi.responses import FileResponse
 import os
+from signature_detect.loader import Loader
+from signature_detect.extractor import Extractor
+from signature_detect.cropper import Cropper
+from signature_detect.judger import Judger
+
 router=APIRouter(
     prefix='/parties/v1',
     tags=['Parties']
@@ -15,9 +21,13 @@ party_role='HOD'
 
 UPLOAD_DIR=Path('signature-images')
 
+# async def signature_analysis(image):
+    
+
 @router.post('/upload-image',status_code=status.HTTP_201_CREATED)
 async def upload_image_signature(sign_image:UploadFile):
     msg=''
+    # sign_detected_image=await signature_analysis(sign_image)
     image_file_name=f'{party_role}.jpeg'
     global image_file_path
     image_file_path=UPLOAD_DIR/image_file_name
@@ -58,3 +68,13 @@ async def parties_update_confirmation():
     submit_conformation_list[party_role]=True
     print(submit_conformation_list)
     return f"{party_role} has submitted signature."
+
+@router.get("download_pdf")
+async def download_pdf(filename: str):
+    pdf_directory=r"C:\InfinityBit\Multiparty-signature-system\src\api\services\pdf-generation"
+    file_path = os.path.join(pdf_directory, filename)
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=filename 
+    )
