@@ -1,15 +1,12 @@
 from fastapi import APIRouter,HTTPException,UploadFile
 from src.api.dependencies.database import DatabaseConnect
 from src.api.routers.admin import isUpdateLocked, submit_conformation_list
+from src.api.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
 from starlette import status
 from pathlib import Path
 import shutil
 from fastapi.responses import FileResponse
 import os
-from signature_detect.loader import Loader
-from signature_detect.extractor import Extractor
-from signature_detect.cropper import Cropper
-from signature_detect.judger import Judger
 
 router=APIRouter(
     prefix='/parties/v1',
@@ -21,13 +18,9 @@ party_role='HOD'
 
 UPLOAD_DIR=Path('signature-images')
 
-# async def signature_analysis(image):
-    
-
 @router.post('/upload-image',status_code=status.HTTP_201_CREATED)
 async def upload_image_signature(sign_image:UploadFile):
     msg=''
-    # sign_detected_image=await signature_analysis(sign_image)
     image_file_name=f'{party_role}.jpeg'
     global image_file_path
     image_file_path=UPLOAD_DIR/image_file_name
@@ -38,6 +31,7 @@ async def upload_image_signature(sign_image:UploadFile):
             'image_name':str(sign_image.filename),
             'party_id':party_id
         }
+        await Sign_Detect_Extract.signature_detect_extract(image_file_path)
         await DatabaseConnect.sign_collection_insert_one(doc)
         msg=f'Signature extracted from {sign_image.filename}'
     sign_image.file.close()
@@ -69,7 +63,7 @@ async def parties_update_confirmation():
     print(submit_conformation_list)
     return f"{party_role} has submitted signature."
 
-@router.get("download_pdf")
+@router.get("/download-pdf")
 async def download_pdf(filename: str):
     pdf_directory=r"C:\InfinityBit\Multiparty-signature-system\src\api\services\pdf-generation"
     file_path = os.path.join(pdf_directory, filename)

@@ -9,8 +9,8 @@ dependencies = [
     "pydantic>=2.12.4",
     "python-multipart>=0.0.20",
     "reportlab>=4.4.5",
-    "signature-detect>=0.1.4",
     "starlette>=0.50.0",
     "typing>=3.10.0.0",
+    "ultralytics>=8.3.231",
     "uvicorn>=0.38.0",
 ]
