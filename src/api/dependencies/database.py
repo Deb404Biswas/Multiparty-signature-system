@@ -29,3 +29,11 @@ class DatabaseConnect:
             {'image_name':image_filename}
             }
         await sign_collection.update_one(query,update_operation)
+    @staticmethod
+    async def party_collection_find_one(role,id,session_id):
+        return await party_collection.find_one({
+            'role':role,
+            'party_id':id,
+            'session_id':session_id
+        })
+    
