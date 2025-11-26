@@ -4,11 +4,14 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import cm
+from pathlib import Path
 
 class doc_generator:
     def pdf_generator(session_id):
-        IMAGE_DIRECTORY = r"C:\InfinityBit\Multiparty-signature-system\signature-images"
-        OUTPUT_PDF_FILENAME = f"session_id_{session_id}.pdf"
+        BASE_IMAGE_DIRECTORY = Path(r"C:\InfinityBit\Multiparty-signature-system\signature-images")
+        session_id_str=str(session_id)
+        IMAGE_DIRECTORY = Path(BASE_IMAGE_DIRECTORY/session_id_str)
+        OUTPUT_PDF_FILENAME = "output.pdf"
         SUPPORTED_FORMATS = {'.jpeg', '.jpg', '.png'}
         def create_pdf_with_6_images_per_page(image_directory: str, output_filepath: str):
             if not os.path.isdir(image_directory):

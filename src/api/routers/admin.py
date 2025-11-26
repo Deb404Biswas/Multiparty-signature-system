@@ -16,10 +16,6 @@ class Individual_party(BaseModel):
 class Parties(BaseModel):
     no_of_parties: int
     list_parties: List[Individual_party]
-    
-isUpdateLocked=False
-submit_conformation_list={}
-session_id=1
 
 @router.post("/create-new-parties",status_code=status.HTTP_201_CREATED)
 async def initiate_party_inclusion(parties: Parties):
@@ -27,31 +23,36 @@ async def initiate_party_inclusion(parties: Parties):
         raise HTTPException(status_code=400,detail=f'{parties.no_of_parties} entries needed,{len(parties.list_parties)} provided')
     
     docs = [party.model_dump() for party in parties.list_parties]
-    global submit_conformation_list
+    submit_conformation_dict={}
+    sign_filepath_dict={}
     global session_id
     session_id=session_id+1
     for i,party in enumerate(parties.list_parties):
         temp_dict=docs[i]
         temp_dict['session_id']=session_id
         docs[i]=temp_dict
-        submit_conformation_list[f'{party.role}']=False
+        submit_conformation_dict[f'{party.role}']=False
+        sign_filepath_dict[f'{party.role}']=None
+        
     print(docs)
-    print(submit_conformation_list)
     await DatabaseConnect.party_collection_insert_many(docs)
+    session_doc={
+        "session_id":session_id,
+        "parties_submit_status":submit_conformation_dict,
+        "parties_sign_filepath":sign_filepath_dict
+    }
+    await DatabaseConnect.session_collection_insert_one(session_doc)
     return f"{parties.no_of_parties} parties added to the record in session {session_id}"
 
 @router.put('/lock-update', status_code=status.HTTP_200_OK)
 async def lock_update(session_id:int):
     parties_notSubmitted=[]
-    global submit_conformation_list
-    print(submit_conformation_list)
-    for party in submit_conformation_list:
-        if submit_conformation_list[party]==False:
+    session_doc=await DatabaseConnect.session_collection_find_one(session_id)
+    parties_submit_status=session_doc.get('parties_submit_status',{})
+    for party,party_submit_status in parties_submit_status.items():
+        if parties_submit_status[party]==False:
             parties_notSubmitted.append(party)
-    print(parties_notSubmitted)
-    if parties_notSubmitted is not None:
-        return f'{parties_notSubmitted} are left to confirm and submit their signatures.'
-    global isUpdateLocked
-    isUpdateLocked=True
+    if parties_notSubmitted:
+        return f'Parties left to submit is session {session_id}'
     doc_generator.pdf_generator(session_id)
     return "No further update allowed by parties. PDF generation in process."

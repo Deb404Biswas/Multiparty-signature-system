@@ -10,6 +10,7 @@ try:
     multiparty_sign_system_db=client['multiparty-sign-system']
     party_collection=multiparty_sign_system_db['Parties']
     sign_collection=multiparty_sign_system_db['Signatures']
+    session_collection=multiparty_sign_system_db['Sessions']
 except Exception as e:
     raise HTTPException(status_code=500,detail=f'mongo server connection error: {e}')
 
@@ -17,18 +18,6 @@ class DatabaseConnect:
     @staticmethod
     async def party_collection_insert_many(doc):
         await party_collection.insert_many(doc)
-    
-    @staticmethod
-    async def sign_collection_insert_one(doc):
-        await sign_collection.insert_one(doc)
-    
-    @staticmethod
-    async def sign_collection_update_one(file_path,image_filename):
-        query={'filepath':file_path}
-        update_operation={'$set':
-            {'image_name':image_filename}
-            }
-        await sign_collection.update_one(query,update_operation)
     @staticmethod
     async def party_collection_find_one(role,id,session_id):
         return await party_collection.find_one({
@@ -36,4 +25,15 @@ class DatabaseConnect:
             'party_id':id,
             'session_id':session_id
         })
-    
+    @staticmethod
+    async def session_collection_insert_one(doc):
+        await session_collection.insert_one(doc)
+    @staticmethod
+    async def session_collection_find_one(session_id):
+        return await session_collection.find_one({'session_id':session_id})
+    @staticmethod
+    async def session_collection_update_one(update_data,session_id):
+        await session_collection.update_one(
+            {"session_id": session_id},
+            update_data
+        )
