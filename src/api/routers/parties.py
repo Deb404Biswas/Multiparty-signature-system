@@ -90,12 +90,10 @@ async def parties_update_confirmation(party_role:str=Form(...),\
     await DatabaseConnect.session_collection_update_one(update_data,session_id)
     return f"{party_role} has submitted signature."
 
-@router.get("/download-pdf")
-async def download_pdf():
-    # if not await DatabaseConnect.party_collection_find_one(party_role,party_id,session_id):
-    #     raise HTTPException(status_code=404,detail=f'{party_role} does not exists in session{session_id}')
-    filename='session_id_34567.pdf'
-    pdf_directory=r"C:\InfinityBit\Multiparty-signature-system\src\api\services\pdf_generation"
+@router.get("/download-pdf/{session_id}")
+async def download_pdf(session_id:int):
+    filename=f"session_id_{session_id}.pdf"
+    pdf_directory=Path(r'src\api\services\pdf_generation')
     file_path = os.path.join(pdf_directory,filename)
     return FileResponse(
         path=file_path,

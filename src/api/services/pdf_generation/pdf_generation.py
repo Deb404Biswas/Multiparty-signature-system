@@ -8,12 +8,12 @@ from pathlib import Path
 
 class doc_generator:
     def pdf_generator(session_id):
-        BASE_IMAGE_DIRECTORY = Path(r"C:\InfinityBit\Multiparty-signature-system\signature-images")
+        BASE_IMAGE_DIRECTORY = Path(r"signature-images")
         session_id_str=str(session_id)
         IMAGE_DIRECTORY = Path(BASE_IMAGE_DIRECTORY/session_id_str)
-        OUTPUT_PDF_FILENAME = "output.pdf"
+        OUTPUT_PDF_FILENAME =Path(r'src\api\services\pdf_generation')/f'session_id_{session_id}.pdf'
         SUPPORTED_FORMATS = {'.jpeg', '.jpg', '.png'}
-        def create_pdf_with_6_images_per_page(image_directory: str, output_filepath: str):
+        def create_pdf(image_directory: str, output_filepath: str):
             if not os.path.isdir(image_directory):
                 print(f"Error: Directory not found at '{image_directory}'")
                 return
@@ -112,6 +112,4 @@ class doc_generator:
                 
             except Exception as e:
                 print(f"Error: {e}")
-
-        if __name__ == "__main__":
-            create_pdf_with_6_images_per_page(IMAGE_DIRECTORY, OUTPUT_PDF_FILENAME)
+        create_pdf(str(IMAGE_DIRECTORY), str(OUTPUT_PDF_FILENAME))
