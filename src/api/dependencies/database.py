@@ -9,7 +9,6 @@ try:
     client =AsyncIOMotorClient(connection_string)
     multiparty_sign_system_db=client['multiparty-sign-system']
     party_collection=multiparty_sign_system_db['Parties']
-    sign_collection=multiparty_sign_system_db['Signatures']
     session_collection=multiparty_sign_system_db['Sessions']
 except Exception as e:
     raise HTTPException(status_code=500,detail=f'mongo server connection error: {e}')
@@ -19,9 +18,8 @@ class DatabaseConnect:
     async def party_collection_insert_many(doc):
         await party_collection.insert_many(doc)
     @staticmethod
-    async def party_collection_find_one(role,id,session_id):
+    async def party_collection_find_one(id,session_id):
         return await party_collection.find_one({
-            'role':role,
             'party_id':id,
             'session_id':session_id
         })
