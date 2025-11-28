@@ -1,14 +1,16 @@
-from fastapi import APIRouter,HTTPException,UploadFile,Form
+from fastapi import APIRouter,HTTPException,UploadFile,Form,Depends
 from src.api.dependencies.database import DatabaseConnect
 from src.api.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
+from src.api.dependencies.parties_dependency import isPartyInSession
+from src.api.routers.auth import get_current_user
 from starlette import status
 from pathlib import Path
 import shutil
 from fastapi.responses import FileResponse
 import os
 from loguru import logger
+from typing import Annotated
 
-logger.remove()
 logger.add(
     "app.log",
     format="{time:MMMM D, YYYY - HH:mm:ss} {level} ----- {message}"
@@ -19,12 +21,13 @@ router=APIRouter(
 )
 
 UPLOAD_DIR=Path('signature-images')
+current_user=Annotated[dict, Depends(get_current_user())]
 
 @router.post('/upload-image',status_code=status.HTTP_201_CREATED)
-async def upload_image_signature(sign_image:UploadFile,party_role:str=Form(...),\
-    party_id:str=Form(...),session_id:str=Form(...)):
-    if not await DatabaseConnect.party_collection_find_one(party_id,session_id):
-        raise HTTPException(status_code=404,detail=f'{party_role} does not exists in session{session_id}')
+async def upload_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
+    session_doc=await isPartyInSession(user,session_id)
+    party_role=user['user_role']
+    party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} uploading image through post parties/v1/upload-image endpoint")
     msg=''
     session_folder = UPLOAD_DIR / session_id
@@ -35,7 +38,6 @@ async def upload_image_signature(sign_image:UploadFile,party_role:str=Form(...),
         shutil.copyfileobj(sign_image.file, buffer)
         await Sign_Detect_Extract.signature_detect_extract(image_file_path)
         logger.info(f"Signature image is extracted from {sign_image.filename} and stored in {image_file_path}")
-        session_doc=await DatabaseConnect.session_collection_find_one(session_id)
         parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
         parties_sign_filepath[f'{party_role}_{party_id}'] = str(image_file_path)
         update_data = {
@@ -51,13 +53,12 @@ async def upload_image_signature(sign_image:UploadFile,party_role:str=Form(...),
     return msg
 
 @router.put('/update-image',status_code=status.HTTP_202_ACCEPTED)
-async def update_image_signature(sign_image:UploadFile,party_role:str=Form(...),\
-    party_id:str=Form(...),session_id:str=Form(...)):
-    if not await DatabaseConnect.party_collection_find_one(party_id,session_id):
-        raise HTTPException(status_code=404,detail=f'{party_role} does not exists in session{session_id}')
+async def update_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
+    session_doc=await isPartyInSession(user,session_id)
+    party_role=user['user_role']
+    party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} updating image through put parties/v1/update-image endpoint")
     msg=''
-    session_doc=await DatabaseConnect.session_collection_find_one(session_id)
     parties_submit_status=session_doc.get('parties_submit_status',{})
     if parties_submit_status[f'{party_role}_{party_id}']==True:
         raise HTTPException(status_code=403,detail=f'{party_role} with id:{party_id} has already confirmed signature')
@@ -81,12 +82,11 @@ async def update_image_signature(sign_image:UploadFile,party_role:str=Form(...),
     return msg
 
 @router.put('/submit-confirmation',status_code=status.HTTP_200_OK)
-async def parties_update_confirmation(party_role:str=Form(...),\
-    party_id:str=Form(...),session_id:str=Form(...)):
-    if not await DatabaseConnect.party_collection_find_one(party_id,session_id):
-        raise HTTPException(status_code=404,detail=f'{party_role} does not exists in session{session_id}/{party_id} is incorrect for {party_role}')
+async def parties_update_confirmation(user:current_user,session_id:str=Form(...)):
+    session_doc=await isPartyInSession(user,session_id)
+    party_role=user['user_role']
+    party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} trying to submit conformation through put parties/v1/submit-conformation endpoint")
-    session_doc=await DatabaseConnect.session_collection_find_one(session_id)
     parties_submit_status=session_doc.get('parties_submit_status',{})
     parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
     if parties_submit_status[f'{party_role}_{party_id}']==True:
@@ -103,9 +103,9 @@ async def parties_update_confirmation(party_role:str=Form(...),\
     return f"{party_role} with id:{party_id} of session:{session_id} has submitted signature."
 
 @router.get("/download-pdf/{session_id}")
-async def download_pdf(session_id):
-    if not await DatabaseConnect.session_collection_find_one(session_id):
-        raise HTTPException(status_code=404,detail=f'Session is:{session_id} does not exists in record')
+async def download_pdf(user:current_user,session_id):
+    if not await isPartyInSession(user,session_id):
+        raise HTTPException(status_code=403,detail=f'error:{user['user_role']} not in session id:{session_id}')
     logger.info(f"session_id_{session_id}.pdf is being downloaded")
     filename=f"session_id_{session_id}.pdf"
     pdf_directory=Path(r'src\api\services\pdf_generation')
