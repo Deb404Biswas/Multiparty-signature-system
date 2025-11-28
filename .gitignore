@@ -7,3 +7,5 @@ _pycache_
 *.jpg
 *.jpeg
 *.pdf
+*.pt
+*.log
