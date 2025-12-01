@@ -31,7 +31,10 @@ async def upload_image_signature(user:current_user,sign_image:UploadFile,session
     image_file_path=session_folder/image_file_name
     with image_file_path.open('wb') as buffer:
         shutil.copyfileobj(sign_image.file, buffer)
-        await Sign_Detect_Extract.signature_detect_extract(image_file_path)
+        try:
+            await Sign_Detect_Extract.signature_detect_extract(image_file_path)
+        except:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail='Signature not found')
         logger.info(f"Signature image is extracted from {sign_image.filename} and stored in {image_file_path}")
         parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
         parties_sign_filepath[f'{party_role}_{party_id}'] = str(image_file_path)
@@ -65,7 +68,10 @@ async def update_image_signature(user:current_user,sign_image:UploadFile,session
     image_file_path=UPLOAD_DIR/session_id/image_file_path
     with image_file_path.open('wb') as buffer:
         shutil.copyfileobj(sign_image.file, buffer)
-        await Sign_Detect_Extract.signature_detect_extract(image_file_path)
+        try:
+            await Sign_Detect_Extract.signature_detect_extract(image_file_path)
+        except:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail='Signature not found')
         logger.info(f"New image : {sign_image.filename} Filepath:{image_file_path}")
         parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
         parties_sign_filepath[f'{party_role}_{party_id}'] = str(image_file_path)
@@ -118,10 +124,10 @@ async def download_pdf(user:current_user,session_id):
     if not session_doc:
         raise HTTPException(status_code=403,detail=f'error:{user['user_role']} not in session id:{session_id}')
     lock_status=session_doc.get('isUpdateLocked')
-    logger.info(f'Lock_status:{lock_status}')
+    logger.debug(f'Lock_status:{lock_status}')
     if lock_status==False:
         return {
-            'status':200,
+            'status':409,
             'message':'Admin needs to confirm the signatures and lock the process for pdf generation.'
         }
     logger.info(f"session_id_{session_id}.pdf is being downloaded")

@@ -28,7 +28,7 @@ current_user=Annotated[dict, Depends(get_current_user)]
 @router.post("/create-new-parties",status_code=status.HTTP_201_CREATED)
 async def initiate_party_inclusion(parties: Parties,user:current_user):
     if user['user_type']!='admin':
-        logger.info(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
+        logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')
     if len(parties.list_parties)!=parties.no_of_parties:
         raise HTTPException(status_code=400,detail=f'{parties.no_of_parties} entries needed,{len(parties.list_parties)} provided')
@@ -38,9 +38,9 @@ async def initiate_party_inclusion(parties: Parties,user:current_user):
     sign_filepath_dict={}
     list_party=[]
     for party in parties.list_parties:
-        logger.info(f"{party}")
+        logger.debug(f"{party}")
         list_party.append(f'{party.party_id}')
-        logger.info(f"{list_party}")
+        logger.debug(f"{list_party}")
         if not await DatabaseConnect.user_collection_find_one_RoleAndId(party.role,party.party_id):
             raise HTTPException(status_code=403,detail=f'error:{party.role},id:{party.party_id} is not a registered user')
         
@@ -62,7 +62,7 @@ async def initiate_party_inclusion(parties: Parties,user:current_user):
 @router.put('/lock-update', status_code=status.HTTP_200_OK)
 async def lock_update(session_id,user:current_user):
     if user['user_type']!='admin':
-        logger.info(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
+        logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')
     parties_notSubmitted=[]
     session_doc=await DatabaseConnect.session_collection_find_one(session_id)
@@ -85,4 +85,7 @@ async def lock_update(session_id,user:current_user):
     logger.info(f"Update locked by admin for session : {session_id}")
     await DatabaseConnect.session_collection_update_one(update_data,session_id)
     doc_generator.pdf_generator(session_id)
-    return f"PDF generated. Use session_id: {session_id} to download file."
+    return {
+        'message':'PDF generated successfully.',
+        'session_id':session_id
+    }

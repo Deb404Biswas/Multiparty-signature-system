@@ -74,6 +74,8 @@ async def create_new_user(user_req: UserReq):
     user_type=user_req.user_type
     user_id=user_req.user_id
     user_password=user_req.user_password
+    if user_type!='party' or user_type!='admin':
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail='user_type should be either party or admin')
     if await DatabaseConnect.user_collection_find_one(user_id):
         logger.info(f"The user:{user_type} with id:{user_id} already present in the database record. Unique id is required.")
         raise HTTPException(status_code=403,detail=f'error: User:{user_type} ID:{user_id} already present')
