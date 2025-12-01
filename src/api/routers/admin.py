@@ -9,10 +9,7 @@ import uuid
 from typing import Annotated
 from loguru import logger
 
-logger.add(
-    'app.log',
-    format="{time:MMMM D, YYYY - HH:mm:ss} {level} ----- {message}"
-)
+
 
 router=APIRouter(
     prefix='/admin/v1',
@@ -26,7 +23,7 @@ class Parties(BaseModel):
     no_of_parties: int
     list_parties: List[Individual_party]
     
-current_user=Annotated[dict, Depends(get_current_user())]
+current_user=Annotated[dict, Depends(get_current_user)]
 
 @router.post("/create-new-parties",status_code=status.HTTP_201_CREATED)
 async def initiate_party_inclusion(parties: Parties,user:current_user):
@@ -36,25 +33,31 @@ async def initiate_party_inclusion(parties: Parties,user:current_user):
     if len(parties.list_parties)!=parties.no_of_parties:
         raise HTTPException(status_code=400,detail=f'{parties.no_of_parties} entries needed,{len(parties.list_parties)} provided')
     session_id = str(uuid.uuid4())
+    logger.info(f'session id: {session_id}')
     submit_conformation_dict={}
     sign_filepath_dict={}
-    response_msg=[]
+    list_party=[]
     for party in parties.list_parties:
+        logger.info(f"{party}")
+        list_party.append(f'{party.party_id}')
+        logger.info(f"{list_party}")
         if not await DatabaseConnect.user_collection_find_one_RoleAndId(party.role,party.party_id):
             raise HTTPException(status_code=403,detail=f'error:{party.role},id:{party.party_id} is not a registered user')
         
         submit_conformation_dict[f'{party.role}_{party.party_id}']=False
         sign_filepath_dict[f'{party.role}_{party.party_id}']=None
-        response_msg.append(f'{party.role} having id:{party.party_id} is initiated in session:{session_id}.Make note of session id')
-
     session_doc={
         "session_id":session_id,
-        'parties': parties.list_parties,
+        'parties': list_party,
+        'isUpdateLocked':False,
         "parties_submit_status":submit_conformation_dict,
         "parties_sign_filepath":sign_filepath_dict
     }
     await DatabaseConnect.session_collection_insert_one(session_doc)
-    return response_msg
+    return {'status':200,
+            'parties':list_party,
+            'session_id':session_id,
+            'msg':'Parties included sucessfully. Make note of session id'}
 
 @router.put('/lock-update', status_code=status.HTTP_200_OK)
 async def lock_update(session_id,user:current_user):
@@ -70,6 +73,16 @@ async def lock_update(session_id,user:current_user):
         if parties_submit_status[party]==False:
             parties_notSubmitted.append(party)
     if parties_notSubmitted:
-        return f'{parties_notSubmitted} parties left to submit in session {session_id}'
+        return {
+            'message':"Parties left to submit their signature",
+            'Not Submitted':parties_notSubmitted,
+            'session_id':session_id
+            }
+    update_data = {
+            "$set": {
+                "isUpdateLocked":True
+            }}
+    logger.info(f"Update locked by admin for session : {session_id}")
+    await DatabaseConnect.session_collection_update_one(update_data,session_id)
     doc_generator.pdf_generator(session_id)
     return f"PDF generated. Use session_id: {session_id} to download file."

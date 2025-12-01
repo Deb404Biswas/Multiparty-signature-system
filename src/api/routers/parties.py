@@ -11,17 +11,13 @@ import os
 from loguru import logger
 from typing import Annotated
 
-logger.add(
-    "app.log",
-    format="{time:MMMM D, YYYY - HH:mm:ss} {level} ----- {message}"
-)
 router=APIRouter(
     prefix='/parties/v1',
     tags=['Parties']
 )
 
 UPLOAD_DIR=Path('signature-images')
-current_user=Annotated[dict, Depends(get_current_user())]
+current_user=Annotated[dict, Depends(get_current_user)]
 
 @router.post('/upload-image',status_code=status.HTTP_201_CREATED)
 async def upload_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
@@ -29,7 +25,6 @@ async def upload_image_signature(user:current_user,sign_image:UploadFile,session
     party_role=user['user_role']
     party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} uploading image through post parties/v1/upload-image endpoint")
-    msg=''
     session_folder = UPLOAD_DIR / session_id
     session_folder.mkdir(parents=True, exist_ok=True)
     image_file_name=f'{party_role}_{party_id}.jpeg'
@@ -47,10 +42,15 @@ async def upload_image_signature(user:current_user,sign_image:UploadFile,session
         await DatabaseConnect.session_collection_update_one(update_data,session_id)
         logger.info(f"{party_role} with {party_id} able to upload image.")
         logger.info(f"The image filepath in database is : {image_file_path}")
-        msg=f'Signature extracted from {sign_image.filename} provided by {party_role} with id:{party_id} in session:{session_id}'
     sign_image.file.close()
     logger.info(f"{party_role} with id:{party_id} in session {session_id} completed the upload image process.")
-    return msg
+    return {
+        'status':200,
+        'party_role':party_role,
+        'party_id':party_id,
+        'session_id':session_id,
+        'message':f'Signature extracted successfully.'
+    }
 
 @router.put('/update-image',status_code=status.HTTP_202_ACCEPTED)
 async def update_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
@@ -58,7 +58,6 @@ async def update_image_signature(user:current_user,sign_image:UploadFile,session
     party_role=user['user_role']
     party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} updating image through put parties/v1/update-image endpoint")
-    msg=''
     parties_submit_status=session_doc.get('parties_submit_status',{})
     if parties_submit_status[f'{party_role}_{party_id}']==True:
         raise HTTPException(status_code=403,detail=f'{party_role} with id:{party_id} has already confirmed signature')
@@ -76,10 +75,15 @@ async def update_image_signature(user:current_user,sign_image:UploadFile,session
             }}
         await DatabaseConnect.session_collection_update_one(update_data,session_id)
         logger.info(f"The update image filepath is stored in database")
-        msg=f'Signature extracted from {sign_image.filename} used to update existing signature by {party_role} with id:{party_id} in session{session_id}'
     sign_image.file.close()
     logger.info(f"{party_role} with id:{party_id} in session {session_id} completed the update image process.")
-    return msg
+    return {
+        'status':200,
+        'party_role':party_role,
+        'party_id':party_id,
+        'session_id':session_id,
+        'message':f'Signature updated successfully.'
+    }
 
 @router.put('/submit-confirmation',status_code=status.HTTP_200_OK)
 async def parties_update_confirmation(user:current_user,session_id:str=Form(...)):
@@ -100,12 +104,26 @@ async def parties_update_confirmation(user:current_user,session_id:str=Form(...)
             }}
     await DatabaseConnect.session_collection_update_one(update_data,session_id)
     logger.info(f"{party_role} with {party_id} from session {session_id} completed submit conformation through put parties/v1/submit-conformation endpoint")
-    return f"{party_role} with id:{party_id} of session:{session_id} has submitted signature."
+    return {
+        'status':200,
+        'party_role':party_role,
+        'party_id':party_id,
+        'session_id':session_id,
+        'message':f'Signature submitted successfully.'
+    }
 
 @router.get("/download-pdf/{session_id}")
 async def download_pdf(user:current_user,session_id):
-    if not await isPartyInSession(user,session_id):
+    session_doc=await isPartyInSession(user,session_id)
+    if not session_doc:
         raise HTTPException(status_code=403,detail=f'error:{user['user_role']} not in session id:{session_id}')
+    lock_status=session_doc.get('isUpdateLocked')
+    logger.info(f'Lock_status:{lock_status}')
+    if lock_status==False:
+        return {
+            'status':200,
+            'message':'Admin needs to confirm the signatures and lock the process for pdf generation.'
+        }
     logger.info(f"session_id_{session_id}.pdf is being downloaded")
     filename=f"session_id_{session_id}.pdf"
     pdf_directory=Path(r'src\api\services\pdf_generation')

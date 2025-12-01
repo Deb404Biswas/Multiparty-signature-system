@@ -6,16 +6,13 @@ from loguru import logger
 from passlib.context import CryptContext
 from starlette import status
 from typing import Annotated
-import datetime
+from datetime import datetime
 from datetime import timedelta,timezone
 from jose import jwt
 import os
 from dotenv import load_dotenv,find_dotenv
 
-logger.add(
-    "app.log",
-    format="{time:MMMM D, YYYY - HH:mm:ss} {level} ----- {message}"
-)
+
 router=APIRouter(
     prefix='/users/v1/auth',
     tags=['Auth']
@@ -37,10 +34,14 @@ class Token(BaseModel):
     token_type: str
     
 async def user_authentication(user_password,user_id):
+    logger.info(f"user_id:{user_id}, user_password:{user_password}")
     user_auth=await DatabaseConnect.user_collection_find_one(user_id)
+    logger.info(f"user-auth:{user_auth}")
     if not user_auth:
+        logger.info(f"user_id: {user_id} not found in the database")
         raise HTTPException(status_code=401,detail=f'error:User with id {id} not found')
     if not pwd_context.verify(user_password,user_auth['user_password']):
+        logger.info(f"User id:{user_id} found but password : {user_password} is incorrect.")
         raise HTTPException(status_code=403,detail=f'error:Incorrect password')
     return user_auth
 
@@ -86,13 +87,14 @@ async def create_new_user(user_req: UserReq):
     return {
         'status':201,
         'message':'New user created!',
-        'user_type': {user_type},
-        'user_id':{user_id}
+        'user_type':user_type,
+        'user_id':user_id
     }
     
 @router.post("/login-access",response_model=Token)
 async def login_access_token(form_data: Annotated[OAuth2PasswordRequestForm,Depends()]):
-    user=await user_authentication(form_data.username,form_data.password,form_data.client_id)
+    logger.info(f"user_id:{form_data.client_id},password:{form_data.password},user_role:{form_data.username}")
+    user=await user_authentication(form_data.password,form_data.client_id)
     if not user:
         logger.info(f"The user:{form_data.username} having id:{form_data.client_id} is not pressent in users database")
         raise HTTPException(status_code=404,detail=f'Not authenticated')

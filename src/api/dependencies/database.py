@@ -28,7 +28,7 @@ class DatabaseConnect:
         )
     @staticmethod
     async def user_collection_find_one(user_id):
-        return await users_collection.find_one(user_id)
+        return await users_collection.find_one({'user_id':user_id})
     @staticmethod
     async def user_collection_find_one_RoleAndId(user_role,user_id):
         return await users_collection.find_one({'user_role':user_role, 'user_id':user_id})

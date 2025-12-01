@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from src.api.routers import admin,parties,auth
 from loguru import logger
 
-logger.remove()
 logger.add(
     "app.log",
     format="{time:MMMM D, YYYY - HH:mm:ss} {level} ----- {message}"
