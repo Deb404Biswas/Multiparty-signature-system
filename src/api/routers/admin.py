@@ -84,7 +84,7 @@ async def lock_update(session_id,user:current_user):
             }}
     logger.info(f"Update locked by admin for session : {session_id}")
     await DatabaseConnect.session_collection_update_one(update_data,session_id)
-    doc_generator.pdf_generator(session_id)
+    await doc_generator.pdf_generator(session_id)
     return {
         'message':'PDF generated successfully.',
         'session_id':session_id
