@@ -52,11 +52,11 @@ async def upload_image_signature(user:current_user,sign_image:UploadFile,session
     sign_image.file.close()
     logger.info(f"{party_role} with id:{party_id} in session {session_id} completed the upload image process.")
     return {
-        'status':200,
+        'status':201,
         'party_role':party_role,
         'party_id':party_id,
         'session_id':session_id,
-        'message':f'Signature extracted successfully.'
+        'message':'Signature extracted successfully.'
     }
 
 @router.put('/update-image',status_code=status.HTTP_202_ACCEPTED)
@@ -66,8 +66,11 @@ async def update_image_signature(user:current_user,sign_image:UploadFile,session
     party_id=user['user_id']
     logger.info(f"{party_role} with {party_id} from session {session_id} updating image through put parties/v1/update-image endpoint")
     parties_submit_status=session_doc.get('parties_submit_status',{})
+    parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
     if parties_submit_status[f'{party_role}_{party_id}']==True:
         raise HTTPException(status_code=403,detail=f'{party_role} with id:{party_id} has already confirmed signature')
+    if parties_sign_filepath[f'{party_role}_{party_id}'] is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail='Party needs to upload a signature')
     file_content= await sign_image.read()
     file_content= await Sign_Detect_Extract.signature_detect_extract(file_content)
     image_file_path=f'signature-images/session_id_{session_id}/{party_role}_{party_id}.jpeg'
@@ -76,11 +79,11 @@ async def update_image_signature(user:current_user,sign_image:UploadFile,session
     sign_image.file.close()
     logger.info(f"{party_role} with id:{party_id} in session {session_id} completed the update image process.")
     return {
-        'status':200,
+        'status':202,
         'party_role':party_role,
         'party_id':party_id,
         'session_id':session_id,
-        'message':f'Signature updated successfully.'
+        'message':'Signature updated successfully.'
     }
 
 @router.put('/submit-confirmation',status_code=status.HTTP_200_OK)
@@ -92,9 +95,9 @@ async def parties_update_confirmation(user:current_user,session_id:str=Form(...)
     parties_submit_status=session_doc.get('parties_submit_status',{})
     parties_sign_filepath=session_doc.get('parties_sign_filepath',{})
     if parties_submit_status[f'{party_role}_{party_id}']==True:
-        raise HTTPException(status_code=403,detail=f'{party_role} with id:{party_id} has already confirmed signature')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail=f'{party_role} with id:{party_id} has already confirmed signature')
     if parties_sign_filepath[f'{party_role}_{party_id}'] is None:
-        raise HTTPException(status_code=403,detail=f'{party_role} with id:{party_id} need to upload a signature first.')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail=f'{party_role} with id:{party_id} need to upload a signature first.')
     parties_submit_status[f'{party_role}_{party_id}']=True
     update_data = {
             "$set": {
@@ -110,7 +113,7 @@ async def parties_update_confirmation(user:current_user,session_id:str=Form(...)
         'message':f'Signature submitted successfully.'
     }
 
-@router.get("/download-pdf/{session_id}")
+@router.get("/download-pdf/{session_id}",status_code=status.HTTP_200_OK)
 async def download_pdf(user:current_user,session_id):
     session_doc=await isPartyInSession(user,session_id)
     if not session_doc:
