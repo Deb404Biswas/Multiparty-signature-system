@@ -1,7 +1,7 @@
 from fastapi import APIRouter,HTTPException,UploadFile,Form,Depends
 from src.api.dependencies.database import DatabaseConnect
 from src.api.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
-from src.api.dependencies.r2_storage import R2_Config,s3_client
+from src.api.services.object_storage.r2_storage import R2_Config,s3_client
 from src.api.dependencies.parties_dependency import isPartyInSession
 from src.api.routers.auth import get_current_user
 from starlette import status
@@ -15,7 +15,6 @@ router=APIRouter(
     prefix='/parties/v1',
     tags=['Parties']
 )
-
 
 async def upload_to_r2Bucket(file,filepath=None):
     try:
@@ -122,7 +121,7 @@ async def download_pdf(user:current_user,session_id):
     logger.debug(f'Lock_status:{lock_status}')
     if lock_status==False:
         return {
-            'status':409,
+            'status':400,
             'message':'Admin needs to confirm the signatures and lock the process for pdf generation.'
         }
     try:

@@ -4,7 +4,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import cm
 from loguru import logger
-from src.api.dependencies.r2_storage import s3_client, R2_Config
+from src.api.services.object_storage.r2_storage import s3_client, R2_Config
 
 class doc_generator:
     @staticmethod

@@ -2,6 +2,7 @@ from fastapi import APIRouter,HTTPException,Depends
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from pydantic import BaseModel
 from src.api.dependencies.database import DatabaseConnect
+from src.api.dependencies.config import ConfigClass
 from loguru import logger
 from passlib.context import CryptContext
 from starlette import status
@@ -9,9 +10,6 @@ from typing import Annotated
 from datetime import datetime
 from datetime import timedelta,timezone
 from jose import jwt
-import os
-from dotenv import load_dotenv,find_dotenv
-
 
 router=APIRouter(
     prefix='/users/v1/auth',
@@ -20,9 +18,8 @@ router=APIRouter(
 pwd_context=CryptContext(schemes=['argon2'],deprecated='auto')
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/users/v1/auth/login-access')
 
-load_dotenv(find_dotenv())
-SECRET_KEY=os.environ.get('JWT_SECRET_KEY')
-ALGORITHM=os.environ.get('JWT_ALGORITHM')
+SECRET_KEY=ConfigClass.JWT_SECRET_KEY
+ALGORITHM=ConfigClass.JWT_ALGORITHM
 
 class UserReq(BaseModel):
     user_type: str
@@ -74,7 +71,7 @@ async def create_new_user(user_req: UserReq):
     user_type=user_req.user_type
     user_id=user_req.user_id
     user_password=user_req.user_password
-    if user_type!='party' or user_type!='admin':
+    if user_type!='party' and user_type!='admin':
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail='user_type should be either party or admin')
     if await DatabaseConnect.user_collection_find_one(user_id):
         logger.info(f"The user:{user_type} with id:{user_id} already present in the database record. Unique id is required.")

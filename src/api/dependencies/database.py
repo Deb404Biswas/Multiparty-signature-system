@@ -1,10 +1,8 @@
-import os
-from dotenv import load_dotenv,find_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from src.api.dependencies.config import ConfigClass
 from fastapi import HTTPException
 try:
-    load_dotenv(find_dotenv())
-    mongo_password = os.environ.get("MONGO_PASS")
+    mongo_password = ConfigClass.MONGO_PASS
     connection_string = f"mongodb+srv://Debdwaipayan:{mongo_password}@internship.3kcwior.mongodb.net/?tls=true&tlsAllowInvalidCertificates=true&appName=Internship"
     client =AsyncIOMotorClient(connection_string)
     multiparty_sign_system_db=client['multiparty-sign-system']

@@ -9,8 +9,6 @@ import uuid
 from typing import Annotated
 from loguru import logger
 
-
-
 router=APIRouter(
     prefix='/admin/v1',
     tags=['Admin']
