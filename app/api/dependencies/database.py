@@ -1,8 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from src.api.dependencies.config import ConfigClass
+from app.core.config import settings
 from fastapi import HTTPException
 try:
-    mongo_password = ConfigClass.MONGO_PASS
+    mongo_password = settings.MONGO_PASS
     connection_string = f"mongodb+srv://Debdwaipayan:{mongo_password}@internship.3kcwior.mongodb.net/?tls=true&tlsAllowInvalidCertificates=true&appName=Internship"
     client =AsyncIOMotorClient(connection_string)
     multiparty_sign_system_db=client['multiparty-sign-system']

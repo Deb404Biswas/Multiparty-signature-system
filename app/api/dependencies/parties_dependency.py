@@ -1,7 +1,6 @@
 from fastapi import HTTPException
-from src.api.dependencies.database import DatabaseConnect
+from app.api.dependencies.database import DatabaseConnect
 from loguru import logger
-
 
 async def isPartyInSession(user,session_id):
     if user['user_type']!='party':
