@@ -1,15 +1,15 @@
 from fastapi import APIRouter,HTTPException,Depends
 from app.api.dependencies.database import DatabaseConnect
-from app.api.endpoints.auth.auth import get_current_user
+from app.api.v1.endpoints.auth.auth import get_current_user
 from starlette import status
-from app.api.services.pdf_generation.pdf_generation import doc_generator
-from app.api.endpoints.admin.schemas.admin_schemas import *
+from app.services.pdf_generation.pdf_generation import doc_generator
+from app.api.v1.endpoints.admin.schemas.admin_schemas import *
 import uuid
 from typing import Annotated
 from loguru import logger
 
 router=APIRouter(
-    prefix='/v1/admin',
+    prefix='/admin',
     tags=['Admin']
 )
 current_user=Annotated[dict, Depends(get_current_user)]

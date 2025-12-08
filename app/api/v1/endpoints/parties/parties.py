@@ -1,9 +1,9 @@
 from fastapi import APIRouter,HTTPException,UploadFile,Form,Depends
 from app.api.dependencies.database import DatabaseConnect
-from app.api.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
-from app.api.services.object_storage.r2_storage import R2Storage
+from app.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
+from app.services.object_storage.r2_storage import R2Storage
 from app.api.dependencies.parties_dependency import isPartyInSession
-from app.api.endpoints.auth.auth import get_current_user
+from app.api.v1.endpoints.auth.auth import get_current_user
 from starlette import status
 from fastapi.responses import StreamingResponse
 import os
@@ -12,7 +12,7 @@ from typing import Annotated
 import io
 
 router=APIRouter(
-    prefix='/v1/parties',
+    prefix='/parties',
     tags=['Parties']
 )
     

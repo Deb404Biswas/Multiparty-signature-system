@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException,status
 from app.api.dependencies.database import DatabaseConnect
 from loguru import logger
 
@@ -8,6 +8,8 @@ async def isPartyInSession(user,session_id):
     party_role=user['user_role']
     party_id=user['user_id']
     session_doc=await DatabaseConnect.session_collection_find_one(session_id)
+    if session_doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=f'Session {session_id} does not exists')
     list_party=session_doc.get('parties')
     party_found=False
     for party in list_party:

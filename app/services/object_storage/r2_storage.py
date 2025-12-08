@@ -1,6 +1,8 @@
+from fastapi import HTTPException
+from starlette import status
 import boto3
 import io
-from app.core.config import settings
+from app.core.Config.config import settings
 from loguru import logger
 from typing import BinaryIO, Dict, Any
 
@@ -28,8 +30,24 @@ class R2_Config:
 
 s3_client = R2_Config.get_s3_client()
 
-
 class R2Storage:
+    @staticmethod
+    async def fetch_r2_connection():
+        try:
+            s3_client.head_bucket(Bucket=R2_Config.BUCKET_NAME)
+            logger.info(f"R2 bucket '{R2_Config.BUCKET_NAME}' connection verified.")
+        except Exception as e:
+            logger.error(f"R2 bucket connection failed: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='R2 bucket connection failed.')
+
+    @staticmethod
+    async def close_r2_client():
+        try:
+            s3_client.close()
+            logger.info("R2 S3 client closed.")
+        except Exception as e:
+            logger.error(f"Error:{e}. Occurred while closing r2_client")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail='Error while closing R2 bucket connection')
     @staticmethod
     async def upload_file(file_content: bytes, filepath: str) -> bool:
         try:

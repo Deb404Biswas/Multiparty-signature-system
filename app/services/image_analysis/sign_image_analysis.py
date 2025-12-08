@@ -7,7 +7,7 @@ import io
 class Sign_Detect_Extract:
     @staticmethod
     async def signature_detect_extract(image_bytes: bytes) -> bytes:
-        model = YOLO(r"app\api\services\image_analysis\model_dependency\yolov8s.pt")
+        model = YOLO(r"app\services\image_analysis\model_dependency\yolov8s.pt")
         
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)

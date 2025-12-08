@@ -6,11 +6,11 @@ from starlette import status
 from typing import Annotated
 from datetime import datetime
 from datetime import timedelta
-from app.api.endpoints.auth.helper.auth_helper import *
-from app.api.endpoints.auth.schemas.auth_schemas import *
+from app.api.v1.endpoints.auth.helper.auth_helper import *
+from app.api.v1.endpoints.auth.schemas.auth_schemas import *
 
 router=APIRouter(
-    prefix='/v1/users/auth',
+    prefix='/users/auth',
     tags=['Auth']
 )
 try:
