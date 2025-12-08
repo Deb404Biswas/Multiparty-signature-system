@@ -1,4 +1,4 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import FastAPI,HTTPException,Request
 from app.api.dependencies.database import DatabaseConnect
 from app.services.object_storage.r2_storage import R2Storage
 from app.core.Config.config import settings
@@ -6,7 +6,11 @@ from app.api.Router import router
 from loguru import logger
 from contextlib import asynccontextmanager
 from app.core.logging.logger import logger
+from slowapi import _rate_limit_exceeded_handler,Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
+limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,11 +35,15 @@ app=FastAPI(
     docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 logger.info("Connecting to routers...")
 app.include_router(router.router)
 
 @app.get('/healthy')
-async def health_check():
+@limiter.limit("2/second")
+async def health_check(request:Request):
     try:
         logger.info("Health check completed successfully")
         return {
@@ -45,8 +53,10 @@ async def health_check():
     except:
         logger.error("Health check failed.")
         raise HTTPException(status_code=500,detail='Undocumented error occurred at health check')
+
 @app.get('/version-check')
-async def version_check():
+@limiter.limit("2/second")
+async def version_check(request:Request):
     try:    
         version=settings.VERSION
         logger.info("Version check successfull")

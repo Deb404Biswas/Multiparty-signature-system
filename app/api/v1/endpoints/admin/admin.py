@@ -1,4 +1,4 @@
-from fastapi import APIRouter,HTTPException,Depends
+from fastapi import APIRouter,HTTPException,Depends,Request
 from app.api.dependencies.database import DatabaseConnect
 from app.api.v1.endpoints.auth.auth import get_current_user
 from starlette import status
@@ -7,16 +7,20 @@ from app.api.v1.endpoints.admin.schemas.admin_schemas import *
 import uuid
 from typing import Annotated
 from loguru import logger
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router=APIRouter(
     prefix='/admin',
     tags=['Admin']
 )
+limiter = Limiter(key_func=get_remote_address)
 current_user=Annotated[dict, Depends(get_current_user)]
 
 try:
     @router.post("/create-new-parties",status_code=status.HTTP_201_CREATED)
-    async def initiate_party_inclusion(parties: Parties,user:current_user):
+    @limiter.limit('1/second')
+    async def initiate_party_inclusion(request:Request,parties: Parties,user:current_user):
         if user['user_type']!='admin':
             logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')
@@ -54,7 +58,8 @@ except Exception as e:
 
 try:
     @router.put('/lock-update', status_code=status.HTTP_200_OK)
-    async def lock_update(session_id,user:current_user):
+    @limiter.limit('1/second')
+    async def lock_update(request:Request,session_id,user:current_user):
         if user['user_type']!='admin':
             logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')

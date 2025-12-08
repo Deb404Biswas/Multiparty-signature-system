@@ -1,4 +1,4 @@
-from fastapi import APIRouter,HTTPException,Depends
+from fastapi import APIRouter,HTTPException,Depends,Request
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from app.api.dependencies.database import DatabaseConnect
 from loguru import logger
@@ -8,14 +8,19 @@ from datetime import datetime
 from datetime import timedelta
 from app.api.v1.endpoints.auth.helper.auth_helper import *
 from app.api.v1.endpoints.auth.schemas.auth_schemas import *
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router=APIRouter(
     prefix='/users/auth',
     tags=['Auth']
 )
+limiter = Limiter(key_func=get_remote_address)
+
 try:
     @router.post("/register",status_code=status.HTTP_201_CREATED)
-    async def create_new_user(user_req: UserReq):
+    @limiter.limit('5/minute')
+    async def create_new_user(request:Request,user_req: UserReq):
         user_type=user_req.user_type
         user_id=user_req.user_id
         user_password=user_req.user_password
@@ -41,7 +46,8 @@ except Exception as e:
   
 try:  
     @router.post("/login-access",response_model=Token)
-    async def login_access_token(form_data: Annotated[OAuth2PasswordRequestForm,Depends()]):
+    @limiter.limit('5/minute')
+    async def login_access_token(request:Request,form_data: Annotated[OAuth2PasswordRequestForm,Depends()]):
         logger.info(f"user_id:{form_data.client_id},password:{form_data.password},user_role:{form_data.username}")
         user=await user_authentication(form_data.password,form_data.client_id)
         if not user:

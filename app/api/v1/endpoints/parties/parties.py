@@ -1,4 +1,4 @@
-from fastapi import APIRouter,HTTPException,UploadFile,Form,Depends
+from fastapi import APIRouter,HTTPException,UploadFile,Form,Depends,Request
 from app.api.dependencies.database import DatabaseConnect
 from app.services.image_analysis.sign_image_analysis import Sign_Detect_Extract
 from app.services.object_storage.r2_storage import R2Storage
@@ -10,16 +10,19 @@ import os
 from loguru import logger
 from typing import Annotated
 import io
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router=APIRouter(
     prefix='/parties',
     tags=['Parties']
 )
-    
+limiter = Limiter(key_func=get_remote_address)
 current_user=Annotated[dict, Depends(get_current_user)]
 try:
     @router.post('/upload-image',status_code=status.HTTP_201_CREATED)
-    async def upload_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
+    @limiter.limit('1/second')
+    async def upload_image_signature(request:Request,user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
         session_doc=await isPartyInSession(user,session_id)
         party_role=user['user_role']
         party_id=user['user_id']
@@ -53,7 +56,8 @@ except Exception as e:
 
 try:
     @router.put('/update-image',status_code=status.HTTP_202_ACCEPTED)
-    async def update_image_signature(user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
+    @limiter.limit('1/second')
+    async def update_image_signature(request:Request,user:current_user,sign_image:UploadFile,session_id:str=Form(...)):
         session_doc=await isPartyInSession(user,session_id)
         party_role=user['user_role']
         party_id=user['user_id']
@@ -84,7 +88,8 @@ except Exception as e:
 
 try:
     @router.put('/submit-confirmation',status_code=status.HTTP_200_OK)
-    async def parties_update_confirmation(user:current_user,session_id:str=Form(...)):
+    @limiter.limit('1/second')
+    async def parties_update_confirmation(request:Request,user:current_user,session_id:str=Form(...)):
             session_doc=await isPartyInSession(user,session_id)
             party_role=user['user_role']
             party_id=user['user_id']
@@ -115,7 +120,8 @@ except Exception as e:
 
 try:
     @router.get("/download-pdf/{session_id}",status_code=status.HTTP_200_OK)
-    async def download_pdf(user:current_user,session_id):
+    @limiter.limit('1/second')
+    async def download_pdf(request:Request,user:current_user,session_id):
             session_doc=await isPartyInSession(user,session_id)
             if not session_doc:
                 raise HTTPException(status_code=403,detail=f'error:{user['user_role']} not in session id:{session_id}')
