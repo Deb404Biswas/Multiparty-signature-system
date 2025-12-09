@@ -19,7 +19,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 try:
     @router.post("/register",status_code=status.HTTP_201_CREATED)
-    @limiter.limit('5/minute')
+    @limiter.limit('1/second')
     async def create_new_user(request:Request,user_req: UserReq):
         user_type=user_req.user_type
         user_id=user_req.user_id
@@ -46,7 +46,7 @@ except Exception as e:
   
 try:  
     @router.post("/login-access",response_model=Token)
-    @limiter.limit('5/minute')
+    @limiter.limit('1/second')
     async def login_access_token(request:Request,form_data: Annotated[OAuth2PasswordRequestForm,Depends()]):
         logger.info(f"user_id:{form_data.client_id},password:{form_data.password},user_role:{form_data.username}")
         user=await user_authentication(form_data.password,form_data.client_id)
