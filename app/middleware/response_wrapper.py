@@ -7,7 +7,7 @@ import json
 from loguru import logger
 
 try:
-    from app.core.Config.config import settings
+    from app.core.config.config import settings
     APP_VERSION = settings.VERSION
 except:
     APP_VERSION = "v1"

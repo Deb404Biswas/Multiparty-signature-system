@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from starlette import status
 import boto3
 import io
-from app.core.Config.config import settings
+from app.core.config.config import settings
 from loguru import logger
 from typing import BinaryIO, Dict, Any
 
@@ -12,28 +12,21 @@ class R2_Config:
     ENDPOINT_S3 = settings.R2_ENDPOINT_S3
     BUCKET_NAME = settings.R2_BUCKET
 
-    @classmethod
-    def get_s3_client(cls):
-        try:
-            s3_client = boto3.client(
-                service_name='s3',
-                endpoint_url=cls.ENDPOINT_S3,
-                aws_access_key_id=cls.ACCESS_KEY,
-                aws_secret_access_key=cls.SECRET_ACCESS_KEY,
-                region_name="auto",
-            )
-            logger.info("S3 client setup for R2 successfully")
-            return s3_client
-        except Exception as e:
-            logger.error(f"Error:{e} while setting up S3 client for R2 storage")
-            raise
-
-s3_client = R2_Config.get_s3_client()
+s3_client = None
 
 class R2Storage:
     @staticmethod
     async def fetch_r2_connection():
+        global s3_client
         try:
+            s3_client = boto3.client(
+                service_name='s3',
+                endpoint_url=R2_Config.ENDPOINT_S3,
+                aws_access_key_id=R2_Config.ACCESS_KEY,
+                aws_secret_access_key=R2_Config.SECRET_ACCESS_KEY,
+                region_name="auto",
+            )
+            logger.info("S3 client setup for R2 successfully")
             s3_client.head_bucket(Bucket=R2_Config.BUCKET_NAME)
             logger.info(f"R2 bucket '{R2_Config.BUCKET_NAME}' connection verified.")
         except Exception as e:

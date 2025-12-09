@@ -124,12 +124,12 @@ try:
     async def download_pdf(request:Request,user:current_user,session_id):
             session_doc=await isPartyInSession(user,session_id)
             if not session_doc:
-                raise HTTPException(status_code=403,detail=f'error:{user['user_role']} not in session id:{session_id}')
+                raise HTTPException(status_code=403,detail=f'{user['user_role']} not in session id:{session_id}')
             lock_status=session_doc.get('isUpdateLocked')
             logger.debug(f'Lock_status:{lock_status}')
             if lock_status==False:
                 return {
-                    'status':400,
+                    'status':status.HTTP_400_BAD_REQUEST,
                     'message':'Admin needs to confirm the signatures and lock the process for pdf generation.'
                 }
             try:

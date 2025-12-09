@@ -2,14 +2,14 @@ from fastapi import FastAPI,HTTPException,Request
 from fastapi.responses import JSONResponse
 from app.api.dependencies.database import DatabaseConnect
 from app.services.object_storage.r2_storage import R2Storage
-from app.core.Config.config import settings
-from app.api.Router import router
+from app.core.config.config import settings
+from app.api.v1.router import router
 from contextlib import asynccontextmanager
 from app.core.logging.logger import logger
 from slowapi import _rate_limit_exceeded_handler,Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from app.core.Middleware.response_wrapper import ResponseWrapperMiddleware
+from app.middleware.response_wrapper import ResponseWrapperMiddleware
 import time
 
 limiter = Limiter(key_func=get_remote_address)
@@ -37,14 +37,13 @@ app=FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 logger.info("Adding middleware to app.")
 app.add_middleware(ResponseWrapperMiddleware)
 
 def create_error_response(status_code: int, error_code: str, detail_message: str):
     try:
-        from app.core.Config.config import settings
+        from app.core.config.config import settings
         APP_VERSION = settings.VERSION
     except:
         APP_VERSION = "v1"
@@ -55,7 +54,7 @@ def create_error_response(status_code: int, error_code: str, detail_message: str
             "success": False,
             "data": None,
             "error": {
-                "code": error_code,
+                "code": status_code,
                 "details": detail_message
             },
             "message": detail_message,
@@ -65,6 +64,14 @@ def create_error_response(status_code: int, error_code: str, detail_message: str
             }
         }
     )
+    
+@app.exception_handler(RateLimitExceeded)
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    http_exc = HTTPException(
+        status_code=429,
+        detail=f"Rate limit exceeded: {exc.detail}"
+    )
+    return await http_exception_handler(request, http_exc)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):

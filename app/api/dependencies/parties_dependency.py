@@ -4,7 +4,7 @@ from loguru import logger
 
 async def isPartyInSession(user,session_id):
     if user['user_type']!='party':
-            raise HTTPException(status_code=403,detail='error:User not registered as party')
+            raise HTTPException(status_code=403,detail='User not registered as party')
     party_role=user['user_role']
     party_id=user['user_id']
     session_doc=await DatabaseConnect.session_collection_find_one(session_id)
@@ -18,6 +18,6 @@ async def isPartyInSession(user,session_id):
             break
     if party_found==False:
         logger.info(f'{party_role} of id: {party_id} does not belong in {session_id}')
-        raise HTTPException(status_code=403,detail=f'error: {party_role},id:{party_id} not in session:{session_id}')
+        raise HTTPException(status_code=403,detail=f'{party_role},id:{party_id} not in session:{session_id}')
     logger.info(f'{party_role} of id: {party_id} belongs in {session_id}')
     return session_doc

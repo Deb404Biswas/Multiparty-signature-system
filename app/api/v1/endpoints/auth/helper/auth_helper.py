@@ -1,7 +1,7 @@
 from fastapi import HTTPException,Depends
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from app.api.dependencies.database import DatabaseConnect
-from app.core.Config.config import settings
+from app.core.config.config import settings
 from loguru import logger
 from passlib.context import CryptContext
 from typing import Annotated
@@ -21,10 +21,10 @@ async def user_authentication(user_password,user_id):
     logger.info(f"user-auth:{user_auth}")
     if not user_auth:
         logger.info(f"user_id: {user_id} not found in the database")
-        raise HTTPException(status_code=401,detail=f'error:User with id {id} not found')
+        raise HTTPException(status_code=401,detail=f'User with id {id} not found')
     if not pwd_context.verify(user_password,user_auth['user_password']):
         logger.info(f"User id:{user_id} found but password : {user_password} is incorrect.")
-        raise HTTPException(status_code=403,detail=f'error:Incorrect password')
+        raise HTTPException(status_code=403,detail=f'Incorrect password')
     return user_auth
 
 def create_access_token(user_type,user_role,user_id,expires_delta):
@@ -44,7 +44,7 @@ def get_current_user(token:Annotated[str,Depends(oauth2_bearer)]):
     user_id=payload.get('user_id')
     if user_role is None or user_type is None or user_id is None:
         logger.info(f'Could not validate {user_type}-->{user_role}, id:{user_id} obtained after JWT decoding.')
-        raise HTTPException(status_code=401,detail='error:Could not validate user')
+        raise HTTPException(status_code=401,detail='Could not validate user')
     return {
         'user_role':user_role,
         'user_id':user_id,

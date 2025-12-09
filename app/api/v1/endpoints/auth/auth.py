@@ -26,7 +26,7 @@ try:
         user_password=user_req.user_password
         if await DatabaseConnect.user_collection_find_one(user_id):
             logger.info(f"The user:{user_type} with id:{user_id} already present in the database record. Unique id is required.")
-            raise HTTPException(status_code=403,detail=f'error: User:{user_type} ID:{user_id} already present')
+            raise HTTPException(status_code=403,detail=f'User:{user_type} ID:{user_id} already present')
         doc={
             'user_type':user_type,
             'user_role':user_req.user_role,

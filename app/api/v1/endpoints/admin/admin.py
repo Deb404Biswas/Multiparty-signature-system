@@ -23,7 +23,7 @@ try:
     async def initiate_party_inclusion(request:Request,parties: Parties,user:current_user):
         if user['user_type']!='admin':
             logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not an admin')
         if len(parties.list_parties)!=parties.no_of_parties:
             raise HTTPException(status_code=400,detail=f'{parties.no_of_parties} entries needed,{len(parties.list_parties)} provided')
         session_id = str(uuid.uuid4())
@@ -36,7 +36,7 @@ try:
             list_party.append(f'{party.party_id}')
             logger.debug(f"{list_party}")
             if not await DatabaseConnect.user_collection_find_one_RoleAndId(party.role,party.party_id):
-                raise HTTPException(status_code=403,detail=f'error:{party.role},id:{party.party_id} is not a registered user')
+                raise HTTPException(status_code=403,detail=f'{party.role},id:{party.party_id} is not a registered user')
             
             submit_conformation_dict[f'{party.role}_{party.party_id}']=False
             sign_filepath_dict[f'{party.role}_{party.party_id}']=None
@@ -62,7 +62,7 @@ try:
     async def lock_update(request:Request,session_id,user:current_user):
         if user['user_type']!='admin':
             logger.error(f'{user["user_type"]} with id:{user["user_id"]} is not an admin')
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='error:Not an admin')
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not an admin')
         parties_notSubmitted=[]
         session_doc=await DatabaseConnect.session_collection_find_one(session_id)
         if session_doc is None:
